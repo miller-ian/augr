@@ -1,0 +1,20 @@
+Representation Network
+- Which structure did they use... they present three different types in fig S1
+
+*****
+
+Generative Network
+- For testing, possibly use Picture, the probabilisitc language created by Tenenbaum (Kulkarni, etal)
+
+*****
+
+- figure out how the broadcast stored perspectives into the spatial dimension (pg 15, NSRR)
+	-> representation network?
+- what is the relationship between the representation and the generation models proposed in NSRR?
+	-> Pretty sure they are just directly connected, as shown in fig 1 , NSRR
+	-> The representation network intakes all the scenes/perspectives gathered (o_i = {(x_i_1, v_i_1),(x_i_2, v_i_2),(x_i_3, v_i_3)...}) and outputs r_i, which is the representation for the environment/scene
+	-> This r_i is then pipelined to the generation model along with stochastic latent variables z to create a possible image from a queried location, v_q
+	-> Both models are trained together, end-to-end
+
+	- For our application, do we need a generative model? If we just have a representation model can't we plot things on a map?
+		-> yes we can, but we still need a generative model if we want to be able to generate the plot of full objects and buildings given only one perspective
