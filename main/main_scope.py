@@ -84,7 +84,7 @@ def get_gps_reading():
     try:
         data = ser.readline()
     except:
-    print("loading")
+        print("loading")
         
     if data[0:6] == '$GPGLL':
         msg = pynmea2.parse(data)
@@ -97,7 +97,7 @@ def get_bearing():
 
     print("Using settings file " + SETTINGS_FILE + ".ini")
     if not os.path.exists(SETTINGS_FILE + ".ini"):
-    print("Settings file does not exist, will be created")
+        print("Settings file does not exist, will be created")
 
     s = RTIMU.Settings(SETTINGS_FILE)
     imu = RTIMU.RTIMU(s)
