@@ -1,6 +1,8 @@
 # DROIDvision
 SDC Project: DROIDvision
 
+name change: augr +1
+
 Current Capability Workflow:
 
 1- RaspiCam takes pictures at regular interval.
@@ -25,6 +27,10 @@ Main python file is called main_scope.py under main directory. This file still r
 
 ### Detection
 
+all models and model construction stuff goes here
+
+convert model
+
 Vision models are contained here. This project currently uses a MobileNet SSD model using the Caffe framework. I originally made this choice because MobileNet Caffe is compatible with the Intel NCS, the vision processing hardware we are currently using. The python files are there for debugging.
 
 ### Image Collection
@@ -38,3 +44,6 @@ Contains distance estimation and experimental implementations from papers that b
 ### Mapping
 
 Here is where we attempted publishing to ATAK. We settled for plotting on a Folium map last year. This will require a significant time investment.
+
+Publishing and Mapping combine
+
