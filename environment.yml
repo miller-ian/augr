@@ -1,7 +1,12 @@
 name: augr
 
+channels:
+  - conda-forge
 dependencies:
   - python>=3.8
   - numpy
+  - ros-rosbag
+  - ros-rospy
+  - pyrosbag
   # - pip:
   #   - 
