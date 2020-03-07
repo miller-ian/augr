@@ -1,19 +1,14 @@
 name: augr
 
-channels:
-  - conda-forge
 dependencies:
+  - pip
   - python>=3.8
   - numpy
-  - ros-rosbag
-  - ros-rospy
-  - pyrosbag
   - wheel
   # - pyrealsense2
-  - opencv-python
   - pip:
     - imutils
-    - csv
     - scipy
     - sklearn
+    - opencv-python
     - opencv-python-headless
