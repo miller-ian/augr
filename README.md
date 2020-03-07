@@ -4,9 +4,9 @@ Artificial Ubiquitous Gathering Relay
 ## Table of Contents
 - [Getting Started](#getting-started)
     - [Activating the Environment](#activating-the-environment)
-    - [Windows Setup](#windows-setup)
+    <!-- - [Windows Setup](#windows-setup)
     - [Mac Setup](#mac-setup)
-    - [Linux Setup](#linux-setup)
+    - [Linux Setup](#linux-setup) -->
 - [Overview](#overview)
 ## Getting Started
 
@@ -17,7 +17,13 @@ conda env create -f environment.yml
 conda activate augr
 ```
 
-### Windows Setup
+### Launching the Program
+Executing the following will open a live feed from the webcam on your device to show the detection and tracking features of AUGR.
+```
+python main.py
+```
+
+<!-- ### Windows Setup
 
 TO DO by a windows NERD
 
@@ -49,7 +55,7 @@ It should automatically open the viewer, which, if the camera is connected, shou
 
 ### Linux Setup
 
-TO DO by a linux NERD
+TO DO by a linux NERD -->
 
 ## Overview
 
