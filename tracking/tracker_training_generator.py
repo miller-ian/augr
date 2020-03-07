@@ -39,7 +39,7 @@ with open("detections.txt", 'w') as f:
         frame = vs.read()
         frame = imutils.resize(frame, width = 400)
 
-        cv2.imwrite("tracking/training_frames/frame%d.jpg" % count, frame)
+        cv2.imwrite("training_frames/frame%d.jpg" % count, frame)
         #grab frame dimensions and convert frame to blob
         (h, w) = frame.shape[:2]
         blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 0.007843, (300, 300), 127.5)
