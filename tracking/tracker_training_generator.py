@@ -39,7 +39,7 @@ with open("detections.txt", 'w') as f:
         frame = vs.read()
         frame = imutils.resize(frame, width = 400)
 
-        cv2.imwrite("training_frames/frame%d.jpg" % count, frame)
+        cv2.imwrite("training_frames/img1/%d" % count, frame)
         #grab frame dimensions and convert frame to blob
         (h, w) = frame.shape[:2]
         blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 0.007843, (300, 300), 127.5)
@@ -62,7 +62,9 @@ with open("detections.txt", 'w') as f:
                 idx = int(detections[0, 0, i, 1])
                 box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
                 (startX, startY, endX, endY) = box.astype("int")
-                writer.writerow(("frame%d.jpg" % count, count, startX, startY, endX-startX, endY-startY, detectionConfidence))
+                (x,y,z) = -1,-1,-1
+                id = -1
+                writer.writerow((count, id, startX, startY, endX-startX, endY-startY, detectionConfidence, x, y, z))
                 # draw the prediction on the frame
                 label = "{}: {:.2f}%".format(CLASSES[idx], detectionConfidence * 100)
                 print(label)
@@ -82,3 +84,7 @@ fps.stop()
 # do a bit of cleanup
 cv2.destroyAllWindows()
 vs.stop()
+
+# save our .txt as a .npy
+# might need to adjust the dir path but straightforward
+np.save('det.npy', np.loadtxt('detections.txt'))
