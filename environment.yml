@@ -11,8 +11,9 @@ dependencies:
   - wheel
   # - pyrealsense2
   - opencv-python
-  - scipy
-  - sklearn
-  - opencv-python-headless
-  # - pip:
-  #   - 
+  - pip:
+    - imutils
+    - csv
+    - scipy
+    - sklearn
+    - opencv-python-headless
