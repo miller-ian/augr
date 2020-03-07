@@ -1,7 +1,66 @@
-# DROIDvision
-SDC Project: DROIDvision
+# augr
+Artificial Ubiquitous Gathering Relay
 
-name change: augr +1
+## Table of Contents
+- [Getting Started](#getting-started)
+    - [Activating the Environment](#activating-the-environment)
+    - [Windows Setup](#windows-setup)
+    - [Mac Setup](#mac-setup)
+    - [Linux Setup](#linux-setup)
+- [Overview](#overview)
+## Getting Started
+
+### Activating the Environment
+While in the directory, run the following to 
+```
+conda env create -f environment.yml
+conda activate augr
+```
+
+### Windows Setup
+
+TO DO by a windows NERD
+
+### Mac Setup
+
+After installing the [conda requirements](#activating-the-environment), there is still work to do before you can actually run the code.
+
+#### Intel RealSense SDK
+
+Follow [these](https://dev.intelrealsense.com/docs/macos-installation-for-intel-realsense-sdk) instructions to download the Intel RealSense SDK.
+
+Same as step 6 in the above instructions, but after downloading and making the files, open up the project you made in XCode and build it: there will be a ► (play) button in the top left corner; click it and let the process finish.
+
+#### Verifying the SDK with the RealSense Viewer (Optional)
+
+In XCode, to the right of the build button, there should be a rectangular dropdown menu that displays something along the lines of `ALL_BUILD > My Mac`, as is displayed below:
+
+![](docs/mac_setup/viewer_step1.png)
+
+Click on that dropdown and change it to `realsense-viewer > My Mac`, so it now looks like this:
+
+![](docs/mac_setup/viewer_step2.png)
+
+In the Product Menu, click `Run`, as shown below:
+
+![](docs/mac_setup/viewer_step3.png)
+
+It should automatically open the viewer, which, if the camera is connected, should allow you to see what the camera sees.
+
+### Linux Setup
+
+TO DO by a linux NERD
+
+## Overview
+
+Overview of the code base and pipeline.
+
+### Tracking
+
+DeepSORT by default requires detections of the format:
+
+```<frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>, <z>```
+
 
 Current Capability Workflow:
 

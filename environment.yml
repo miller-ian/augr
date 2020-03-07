@@ -8,5 +8,11 @@ dependencies:
   - ros-rosbag
   - ros-rospy
   - pyrosbag
+  - wheel
+  # - pyrealsense2
+  - opencv-python
+  - scipy
+  - sklearn
+  - opencv-python-headless
   # - pip:
   #   - 
