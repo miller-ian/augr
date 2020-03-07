@@ -8,5 +8,6 @@ dependencies:
   - ros-rosbag
   - ros-rospy
   - pyrosbag
-  # - pip:
-  #   - 
+  - pip:
+    - imutils
+    - csv
