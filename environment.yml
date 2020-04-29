@@ -12,3 +12,9 @@ dependencies:
     - sklearn
     - opencv-python
     - opencv-python-headless
+    - autocrop
+    - ngt
+    - torch
+    - torchvision
+    - facenet-pytorch
+    - pandas
