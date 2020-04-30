@@ -2,14 +2,14 @@ import os
 import time
 import CoT
 
-ATAK_IP = os.getenv('ATAK_IP', '192.168.1.160')
-ATAK_PORT = int(os.getenv('ATAK_PORT', '4242'))
+ATAK_IP = os.getenv('ATAK_IP', '239.2.3.1')
+ATAK_PORT = int(os.getenv('ATAK_PORT', '6969'))
 ATAK_PROTO = os.getenv('ATAK_PROTO', 'UDP')
 
 params = {  # SWX parking lot
     "lat": 27.957261,
     "lon": -82.436587,
-    "uid": "Nerd Herd",
+    "uid": "Ian Miller",
     "identity": "hostile",
     "dimension": "land-unit",
     "entity": "military",
