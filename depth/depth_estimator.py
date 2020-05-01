@@ -22,9 +22,12 @@ import networks
 from layers import disp_to_depth
 from utils import download_model_if_doesnt_exist
 
-model = "mono+stereo_640x192"
+import numpy as np
+from pandas import DataFrame
+from matplotlib import pyplot as plt
+from sklearn.cluster import KMeans
 
-image_path = "image1.jpg"
+scalingFactor = 7
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -52,6 +55,15 @@ def parse_args():
 
     return parser.parse_args()
 
+def get_clusters(pts):
+    singleDimension = []
+    for i in range(len(pts)):
+        for j in range(len(pts[0])):
+            singleDimension.append(pts[i][j])
+    df = DataFrame(singleDimension)
+    kmeans = KMeans(n_clusters=2, max_iter=2000000).fit(df)
+    print("here's kmeans", kmeans.cluster_centers_)
+    return kmeans.labels_, singleDimension
 
 def test_simple(args):
     """Function to predict for a single image or folder of images
@@ -130,26 +142,49 @@ def test_simple(args):
             disp = outputs[("disp", 0)]
             disp_resized = torch.nn.functional.interpolate(
                 disp, (original_height, original_width), mode="bilinear", align_corners=False)
-            print(type(disp_resized))
             # Saving numpy file
             output_name = os.path.splitext(os.path.basename(image_path))[0]
             name_dest_npy = os.path.join(output_directory, "{}_disp.npy".format(output_name))
             scaled_disp, _ = disp_to_depth(disp, 0.1, 100)
-            print(type(scaled_disp))
             np.save(name_dest_npy, scaled_disp.cpu().numpy())
 
             # Saving colormapped depth image
             disp_resized_np = disp_resized.squeeze().cpu().numpy()
-            print(type(disp_resized_np))
             theList = list(disp_resized_np)
             count = 0
             # n = width, k = height
             # n lists of size k
             # origin is at bottom left
-            for i in range(len(theList[0])):
+            
+            labels, pts = get_clusters(theList)
+            ptsOfInterest = []
+            backgroundPts = []
+            index = 0
+            for label in labels:
+                if label == 1:
+                    backgroundPts.append(pts[index])
+                else:
+                    ptsOfInterest.append(pts[index])
+                index += 1
+            total = 0
+            count = 0
+
+            for pt in ptsOfInterest:
                 count += 1
-                print(theList[1079][i])
-            print(count)
+                total += pt
+            
+            label0Distance = total/count
+
+            total = 0
+            count = 0
+            for pt in backgroundPts:
+                
+                count += 1
+                total += pt
+            label1Distance = total/count
+            print("Distance to object:", label0Distance*scalingFactor, "meters")
+            print("Distance to background:", label1Distance*scalingFactor, "meters")
+
             vmax = np.percentile(disp_resized_np, 95)
             normalizer = mpl.colors.Normalize(vmin=disp_resized_np.min(), vmax=vmax)
             mapper = cm.ScalarMappable(norm=normalizer, cmap='magma')
@@ -159,12 +194,13 @@ def test_simple(args):
             name_dest_im = os.path.join(output_directory, "{}_disp.jpeg".format(output_name))
             im.save(name_dest_im)
 
-            print("   Processed {:d} of {:d} images - saved prediction to {}".format(
-                idx + 1, len(paths), name_dest_im))
 
-    print('-> Done!')
 
 
 if __name__ == '__main__':
     args = parse_args()
+    print(args)
+    model = "mono+stereo_640x192"
+
+    image_path = "image1.jpg"
     test_simple(args)
