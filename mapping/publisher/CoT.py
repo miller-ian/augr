@@ -63,7 +63,8 @@ class CursorOnTarget:
             "time": zulu,
             "start": zulu,
             "stale": stale,
-            "type": cot_type
+            "type": cot_type,
+            "how": "m-s"
         }
 
         pt_attr = {

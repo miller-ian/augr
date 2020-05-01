@@ -12,6 +12,11 @@ from tracking.deepSORT.deep_sort import nn_matching
 from tracking.deepSORT.deep_sort.detection import Detection
 from tracking.deepSORT.deep_sort.tracker import Tracker
 
+from faces.facial_recognition import FaceRecognizer
+
+from PIL import Image
+from autocrop import Cropper
+
 def create_unique_color_float(tag, hue_step=0.41):
     """Create a unique RGB color code for a given track id (tag).
 
@@ -35,7 +40,6 @@ def create_unique_color_float(tag, hue_step=0.41):
     h, v = (tag * hue_step) % 1, 1. - (int(tag * hue_step) % 4) / 5.
     r, g, b = colorsys.hsv_to_rgb(h, 1., v)
     return r, g, b
-
 
 def create_unique_color_uchar(tag, hue_step=0.41):
     """Create a unique RGB color code for a given track id (tag).
@@ -69,7 +73,11 @@ class AUGR():
     def __init__(self):
         super().__init__()
 
+        self.facereg = FaceRecognizer()
+
     def run(self):
+
+        out = cv2.VideoWriter('output.mp4',cv2.VideoWriter_fourcc(*'MP4V'), 60, (1920,1080))
 
         # Parameters
         nn_budget = 100
@@ -80,8 +88,40 @@ class AUGR():
         metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
         tracker = Tracker(metric)
 
+        cropper = Cropper()
+        face_counter = 0
+
+        frame_num = 0
+
         # stream through each frame and its associated detections
         for detections, frame in self.detection_stream():
+            if detections == None: break
+            # attempt to get faces
+            for det in detections:
+
+                if det.label != None: # only care about people
+                    if det.label != 'person':
+                        continue
+
+                x,y,w,h = [int(z) for z in det.tlwh]
+                if x < 0: x = 0
+                if y < 0: y = 0
+
+                # OLD FACE CROP CODE, TODO REMOVE
+                # try:
+                #     # feed to autocropper to get faces
+                #     # Get a Numpy array of the cropped image
+                
+                #     cropframe = frame[y:y+(h//2),x:x+w]
+                #     cropped_array = cropper.crop(cropframe)
+                #     cv2.imshow("Frame", cropframe)
+                #     if type(cropped_array) != type(None):
+                #         # Save the cropped image with PIL
+                #         cropped_image = Image.fromarray(cropped_array)
+                #         cropped_image.save('faces/detected_faces/{}.png'.format(face_counter))
+                #         face_counter += 1
+                # except Exception as e:
+                #     print(e)
 
             # Run non-maxima suppression.
             boxes = np.array([d.tlwh for d in detections])
@@ -103,9 +143,19 @@ class AUGR():
                 cv2.rectangle(frame, (startX, startY), (endX, endY), color, 2)
                 y = startY - 15 if startY - 15 > 15 else startY + 15
                 cv2.putText(frame, str(track.track_id), (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-            cv2.imshow("Frame", frame)
 
+            # new face code B)
+            faces = self.facereg.detect_faces(frame)
+            for face in faces:
+                cv2.rectangle(frame, (face[0],face[1]), (face[2],face[3]), (255,0,0), 2)
+            # cv2.imshow("Frame", frame)
 
+            out.write(frame)
+            
+            # TODO add debug mode for this stuff
+            print('Processing frame {} ...'.format(frame_num))
+            frame_num += 1
+        out.release()
 
     def detection_stream(self):
         """
@@ -134,12 +184,27 @@ class AUGR():
         confidence = 0.3
 
         net = cv2.dnn.readNetFromCaffe(prototxt, model)
-        vs = VideoStream(src=0).start()
+
+        from_webcam = False
+
+        if from_webcam:
+            vs = VideoStream(src=0).start()
+        else: # from an existing video
+            vs = cv2.VideoCapture('vid.mp4')
 
         count = 0
 
+        ret,Frame = None,None
         while True:
-            frame = vs.read()
+            if from_webcam:
+                frame = vs.read()
+            else:
+                ret,frame = vs.read()
+
+                if not ret:
+                    vs.release()
+                    yield None,None # yield None,None when done,done
+
             # frame = imutils.resize(frame, width = 300)
 
             # grab frame dimensions and convert frame to blob
@@ -172,7 +237,7 @@ class AUGR():
                     (x,y,z) = -1,-1,-1
                     id = -1
 
-                    det_tuple = (count, id, startX, startY, endX, endY, detectionConfidence, x, y, z)
+                    det_tuple = (count, id, startX, startY, endX, endY, detectionConfidence, x, y, z, CLASSES[idx])
 
                     cur_dets.append(det_tuple)
 
@@ -205,19 +270,16 @@ class AUGR():
             self : AUGR object
 
             det_tuple : tuple
-                a tuple of `(frame_id, detect_id, bb_left, bb_top, bb_width, bb_height, confidence, x, y ,z)`
+                a tuple of `(frame_id, detect_id, bb_left, bb_top, bb_width, bb_height, confidence, x, y ,z, label)`
 
             Returns
             -------
             Detection
                 a deepSORT detection object with the information encoded
         """
-        bbox, confidence, feature = det_tuple[2:6], det_tuple[6], det_tuple[10:]
+        bbox, confidence, label, feature = det_tuple[2:6], det_tuple[6], det_tuple[10], det_tuple[11:]
         
-        return Detection(bbox, confidence, feature)
-
-
-
+        return Detection(bbox, confidence, feature, label)
 
 if __name__ == "__main__":
     augr = AUGR()

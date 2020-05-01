@@ -1,3 +1,7 @@
+*.avi
+*.mp4
+detected_faces/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
