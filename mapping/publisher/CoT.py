@@ -84,11 +84,11 @@ class CursorOnTarget:
 
     def pushUDP(__self, ip_address, port, cot_xml):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sent = sock.sendto(cot_xml.encode(), (ip_address, port))
+        sent = sock.sendto(cot_xml, (ip_address, port))
         return sent
 
     def pushTCP(__self, ip_address, port, cot_xml):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn = sock.connect((ip_address, port))
-        return sock.send(cot_xml.encode())
+        return sock.send(cot_xml)
 
