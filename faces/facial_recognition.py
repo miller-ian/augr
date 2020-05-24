@@ -74,6 +74,8 @@ class FaceRecognizer():
                 bry = max(0, int(bry))
 
                 bb_list.append((tlx,tly,brx,bry))
+
+                continue # TODO make this take less memory!
                 
                 img = frame[tly:bry,tlx:brx,:] # crop frame
 

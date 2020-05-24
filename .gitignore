@@ -1,6 +1,7 @@
 *.avi
 *.mp4
 detected_faces/
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
