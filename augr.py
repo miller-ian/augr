@@ -11,9 +11,13 @@ from imutils.video import FPS
 
 from faces.facial_recognition import FaceRecognizer
 
+from depth_estimation import depth_estim
+
 from detection import detection
 
 import numpy as np
+
+import matplotlib.pyplot as plt
 
 logging.basicConfig(filename='log.log', format='[%(asctime)s] - %(message)s', level=logging.INFO)
 
@@ -45,8 +49,15 @@ class AUGR:
         self.calc_tracking = calc_tracking
         self.grab_faces = grab_faces
 
+        self.det_model = detection.load_model()
+
+        self.people = list()
+
         if self.calc_tracking:
             self._init_tracking()
+
+        if self.calc_distance:
+            self.encoder,self.decoder = depth_estim.load_model()
 
         if self.grab_faces:
             self.facereg = FaceRecognizer()
@@ -90,7 +101,7 @@ class AUGR:
 
         out_size = (800,600)
 
-        if save_as_video: out = cv2.VideoWriter('out.mp4',cv2.VideoWriter_fourcc(*'MP4V'), 30, out_size)
+        if save_as_video: out = cv2.VideoWriter('out.mp4',cv2.VideoWriter_fourcc(*'MP4V'), 15, out_size)
 
         try:
             self._main_loop(visualize, save_output, out=out if save_as_video else None, out_size=out_size)
@@ -104,20 +115,45 @@ class AUGR:
             self.video_stream.stop()
 
     def _main_loop(self, visualize, save_output, out=None, out_size=(800,600)):
-        for detection_list,frame in detection.get_detections_from_stream(self.video_stream, self.stream_has_ret):
-            if self.calc_tracking:
-                run_tracking(self.tracker, detection_list, frame, nms_max_overlap=self.nms_max_overlap, visualize=visualize)
-            elif visualize:
-                detection.draw_detections(detection_list, frame)
+        for detection_list,frame in detection.get_detections_from_stream(self.video_stream, self.stream_has_ret, net=self.det_model):
 
-            if self.grab_faces:
-                faces = self.facereg.detect_faces(frame)
-                if visualize:
-                    for face in faces:
-                        cv2.rectangle(frame, (face[0],face[1]), (face[2],face[3]), (255,0,0), 2)
+            # update out people
+            for person in self.people:
+                person.update(detection_list)
+
+            # detection list will now only contain frames that were not a match with any existing people
+
+            self.people = [person for person in self.people if person.relevance > 0]
+            self.people.extend(detection_list)
+
+            soph_distance = False
 
             if self.calc_distance:
-                pass
+                if soph_distance:
+                    depth = depth_estim.get_depth_frame(self.encoder, self.decoder, frame)
+
+                    for person in self.people:
+                        person.set_distance(depth)
+                else:
+                    for person in self.people:
+                        person.set_distance(None, sophisticated=False)
+
+            if self.grab_faces:
+                for person in self.people:
+                    person.set_face(frame, self.facereg)
+                    if person.should_retry():
+                        pass
+                        # try to find a name!
+                        # person.set_name(frame, self.facereg)
+
+            # if self.calc_tracking:
+            #     run_tracking(self.tracker, detection_list, frame, nms_max_overlap=self.nms_max_overlap, visualize=visualize)
+            # elif visualize:
+            #     detection.draw_detections(detection_list, frame, depth=depth)
+
+            for person in self.people:
+                person.draw(frame)
+
 
             if visualize or save_output:
                 frame = cv2.resize(frame, out_size)
@@ -132,6 +168,7 @@ class AUGR:
 if __name__ == "__main__":
     vs = VideoStream(src=0).start()
 
-    a = AUGR(calc_distance=False, calc_tracking=True, grab_faces=True)
+    a = AUGR(calc_distance=False, calc_tracking=False, grab_faces=True)
     a.load_video_stream(vs, False)
     a.run(True, True)
+

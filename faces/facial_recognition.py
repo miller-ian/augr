@@ -3,6 +3,8 @@ import torch
 import numpy as np
 import cv2
 from PIL import Image, ImageDraw
+from os import listdir
+from os.path import isfile, join
 
 class Face():
     def __init__(self, img, vec):
@@ -106,6 +108,70 @@ class FaceRecognizer():
 
     def get_faces(self):
         return self.faces
+
+    def get_face_vector(self, face_img):
+        if face_img is None: return None
+        x_aligned = self.emb_mtcnn(face_img)
+        if x_aligned is not None:
+            # add a dimension
+            x_aligned = x_aligned.unsqueeze(0)
+            emb = self.resnet(x_aligned)
+
+            return emb
+        return None
+
+
+    # TODO the bounding boxes seem real off here...
+    def detect_one_face(self, frame):
+        """
+            Given a frame (some `HEIGHTxWIDTHxCHANNELS` np-array), return a tuple corresponding to the `(tlx,tly,brx,bry)` coordinates of the most probable face.
+
+            if it can't find one, it returns None
+        """
+
+        bb_list = []
+
+        # Detect faces
+        boxes, probs = self.det_mtcnn.detect(frame)
+        print(boxes,probs)
+        faces_tmp = []
+
+        max_prob = max(probs)
+
+        if boxes is not None:
+            for i,box in enumerate(boxes):
+                if probs[i] == max_prob:
+                    l = box.tolist()
+                    tlx,tly,brx,bry = l
+                    # fix dims
+                    tlx = max(0, int(tlx))
+                    tly = max(0, int(tly))
+                    brx = max(0, int(brx))
+                    bry = max(0, int(bry))
+
+                    return (tlx,tly,brx,bry)
+
+        return None
+
+    def get_faces(self):
+        return self.faces
+
+def associate_name(face_rec, face_img, face_db='faces/face_db'):
+    
+    # TODO
+    
+    face_refs = [f for f in listdir(face_db) if isfile(join(face_db, f))]
+
+    anchor_vec = face_rec.resnet(torch.from_numpy(face_img).unsqueeze(0).permute(0, 3, 1, 2).float())
+    print(anchor_vec.shape)
+    for face_ref in face_refs:
+        im = torch.from_numpy(cv2.imread(face_ref)).unsqueeze(0).permute(0, 3, 1, 2).float()
+        vec = face_rec.resnet(im)
+
+        sim = (anchor_vec - vec).norm().item()
+
+        if sim < 0.2: return face_ref.split('/')[-1]
+    return None
 
 if __name__ == "__main__":
     f = FaceRecognizer()

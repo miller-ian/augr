@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 from tracking.deepSORT.deep_sort.detection import Detection
 import logging
+from faces.facial_recognition import associate_name
+from detection.person import Person
 
 CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
         "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
@@ -51,7 +53,7 @@ def raw_detect_from_frame(frame, net=None):
 
     return detections, frame
 
-def _create_detections_from_tuple(det_tuple):
+def _create_person_from_tuple(det_tuple):
     """
         Creates a tracking.deepSORT.deep_sort.tracking.Detection from a tuple of raw
         detection information
@@ -70,11 +72,11 @@ def _create_detections_from_tuple(det_tuple):
     """
     bbox, confidence, label, feature = det_tuple[2:6], det_tuple[6], det_tuple[10], det_tuple[11:]
     
-    return Detection(bbox, confidence, feature, label)
+    return Person(Detection(bbox, confidence, feature, label))
 
 def get_detections_from_frame(frame, min_conf=0.6, net=None, label_filter=['person'], frame_num=0):
     """
-        Given a frame, return the formatted `Detections` from this frame.
+        Given a frame, return the formatted `Detection`s from this frame as a list of `Person`.
     """
     detections,_ = raw_detect_from_frame(frame, net=net)
 
@@ -100,6 +102,8 @@ def get_detections_from_frame(frame, min_conf=0.6, net=None, label_filter=['pers
             idx = int(detections[0, 0, i, 1])
             box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
             (startX, startY, endX, endY) = box.astype("int")
+            endX -= startX
+            endY -= startY
             (x,y,z) = -1,-1,-1
             id = -1
 
@@ -123,7 +127,7 @@ def get_detections_from_frame(frame, min_conf=0.6, net=None, label_filter=['pers
         else:
             logging.debug('{} located (low conf) with bounding box {} - conf: {}'.format(CLASSES[int(detections[0, 0, i, 1])], (detections[0, 0, i, 3:7] * np.array([w, h, w, h])).astype('int'), detectionConfidence))
 
-    return [_create_detections_from_tuple(x) for x in cur_dets if _create_detections_from_tuple(x).label in label_filter],frame
+    return [_create_person_from_tuple(x) for x in cur_dets if _create_person_from_tuple(x).detection.label in label_filter],frame
 
 def get_detections_from_stream(video_stream, min_conf=0.6, net=None, stream_has_ret=False, label_filter=['person']):
     """
@@ -159,13 +163,29 @@ def get_detections_from_stream(video_stream, min_conf=0.6, net=None, stream_has_
         yield get_detections_from_frame(frame, min_conf=min_conf, net=net, label_filter=label_filter, frame_num=count)
         count += 1
 
-def draw_detections(detections, frame):
+def get_face(faces, det_tuple):
+    startX,startY,endX,endY = det_tuple
+
+    det_w = endX - startX
+    det_h = endY - startY
+
+    for face in faces:
+        tlx,tly,brx,bry = face[:4]
+
+        if tlx >= startX + det_w//10 and tly >= startY and brx <= endX - det_w//10 and bry <= startY + det_h//2: # overlaps
+            return face # TODO this might not always give the right face
+
+def draw_detections(detections, frame, depth=None):
     for det in detections:
         startX,startY,endX,endY = det.to_tlbr().astype('int')
         cv2.rectangle(frame, (startX, startY), (endX, endY), (0,0,255), 2)
         y = startY - 15 if startY - 15 > 15 else startY + 15
-        cv2.putText(frame, str(det.label), (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
 
+        if depth is not None:
+            depth_subs = np.array(depth)[startY:endY,startX:endX]
+            avg_depth = np.mean(depth_subs)
 
-
-
+            logging.info('Detection with label {} at depth {}'.format(det.label, avg_depth))
+            cv2.putText(frame, '{} - {}m'.format(str(det.label), avg_depth), (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
+        else:
+            cv2.putText(frame, str(det.label), (startX, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
