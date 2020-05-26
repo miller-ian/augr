@@ -61,7 +61,14 @@ class Person:
         self.face_counter = 50
 
         tlx,tly,brx,bry = self.to_tlbr()
-        f_tlx,f_tly,f_brx,f_bry = face_recognizer.detect_one_face(self._get_subset_from_frame(frame))
+        det_face = face_recognizer.detect_one_face(self._get_subset_from_frame(frame))
+
+        if det_face is None:
+            self.face = None
+            self.face_image = None
+            return
+
+        f_tlx,f_tly,f_brx,f_bry = det_face
 
         padding = 25
 
