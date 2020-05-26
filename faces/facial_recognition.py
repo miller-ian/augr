@@ -133,7 +133,6 @@ class FaceRecognizer():
 
         # Detect faces
         boxes, probs = self.det_mtcnn.detect(frame)
-        print(boxes,probs)
         faces_tmp = []
 
         max_prob = max(probs)
@@ -163,7 +162,6 @@ def associate_name(face_rec, face_img, face_db='faces/face_db'):
     face_refs = [f for f in listdir(face_db) if isfile(join(face_db, f))]
 
     anchor_vec = face_rec.resnet(torch.from_numpy(face_img).unsqueeze(0).permute(0, 3, 1, 2).float())
-    print(anchor_vec.shape)
     for face_ref in face_refs:
         im = torch.from_numpy(cv2.imread(face_ref)).unsqueeze(0).permute(0, 3, 1, 2).float()
         vec = face_rec.resnet(im)
@@ -175,8 +173,9 @@ def associate_name(face_rec, face_img, face_db='faces/face_db'):
 
 if __name__ == "__main__":
     f = FaceRecognizer()
-    frame = cv2.imread('test.png')
-    boxes = f.detect_faces(frame)
-    for face in f.get_faces():
-        face.display()
+    frame = cv2.imread('faces/test.jpeg')
+    boxes = f.detect_one_face(frame)
+    cv2.rectangle(frame, (boxes[0],boxes[1]), (boxes[2],boxes[3]), (255,0,0), 1)
+    cv2.imshow('a', frame)
+    cv2.waitKey(0)
 

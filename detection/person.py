@@ -59,7 +59,13 @@ class Person:
         """
         self.face_counter = 50
 
-        self.face = face_recognizer.detect_one_face(self._get_subset_from_frame(frame))
+        tlx,tly,brx,bry = self.to_tlbr()
+        f_tlx,f_tly,f_brx,f_bry = face_recognizer.detect_one_face(self._get_subset_from_frame(frame))
+
+
+        self.face = tlx + f_tlx, tly + f_tly, tlx + f_brx, tly + f_bry
+
+        cv2.rectangle(frame, (self.face[0], self.face[1]), (self.face[2], self.face[3]), (255,0,0), 1)
 
     def set_name(self, frame, face_recognizer, face_ref='faces/face_db'):
         self.face_counter = 50
