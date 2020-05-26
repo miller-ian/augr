@@ -21,6 +21,8 @@ import matplotlib.pyplot as plt
 
 logging.basicConfig(filename='log.log', format='[%(asctime)s] - %(message)s', level=logging.INFO)
 
+FACENET_ERROR_BEGIN = 'There were no tensor arguments to this function'
+
 class AUGR:
     """
         An Autonomous Ubiquitous Gathering Relay (AUGR) instance.
@@ -140,11 +142,17 @@ class AUGR:
 
             if self.grab_faces:
                 for person in self.people:
-                    person.set_face(frame, self.facereg)
                     if person.should_retry():
-                        pass
-                        # try to find a name!
-                        # person.set_name(frame, self.facereg)
+                        try:
+                            person.set_face(frame, self.facereg)
+
+                            # try to find a name
+                            person.set_name(frame, self.facereg)
+                        except RuntimeError as e: # this is a big hack
+                            if str(e)[:len(FACENET_ERROR_BEGIN)] == FACENET_ERROR_BEGIN:
+                                logging.warning('No faces detected - expected a face!')
+                            else:
+                                raise e
 
             # if self.calc_tracking:
             #     run_tracking(self.tracker, detection_list, frame, nms_max_overlap=self.nms_max_overlap, visualize=visualize)

@@ -3,6 +3,7 @@ import cv2
 from os import listdir
 from os.path import isfile, join
 from PIL import Image
+from faces.facial_recognition import associate_name
 
 class Person:
 
@@ -62,28 +63,19 @@ class Person:
         tlx,tly,brx,bry = self.to_tlbr()
         f_tlx,f_tly,f_brx,f_bry = face_recognizer.detect_one_face(self._get_subset_from_frame(frame))
 
+        padding = 25
 
-        self.face = tlx + f_tlx, tly + f_tly, tlx + f_brx, tly + f_bry
+        self.face = max(tlx + f_tlx - padding, 0), max(tly + f_tly - padding, 0), min(tlx + f_brx + padding, frame.shape[1]), min(tly + f_bry + padding, frame.shape[0])
 
-        cv2.rectangle(frame, (self.face[0], self.face[1]), (self.face[2], self.face[3]), (255,0,0), 1)
+        self.face_image = np.copy(frame[self.face[1]:self.face[3], self.face[0]:self.face[2], :])
+
+        cv2.imwrite('faces/found_faces/found.jpg', self.face_image)
 
     def set_name(self, frame, face_recognizer, face_ref='faces/face_db'):
         self.face_counter = 50
 
-        my_vec = face_recognizer.get_face_vector(Image.fromarray(self._get_subset_from_frame(frame)))
-
-        if my_vec is not None:
-            face_refs = [join(face_ref, f) for f in listdir(face_ref) if isfile(join(face_ref, f)) and f != '.DS_Store']
-
-            for face_ref in face_refs:
-                face = Image.open(face_ref)
-                vec = face_recognizer.get_face_vector(face)
-
-                sim = (my_vec - vec).norm().item()
-
-                if sim < 0.2:
-                    self.name = face_ref.split('/')[-1]
-                    break
+        if self.face_image is not None:
+            self.name = associate_name(face_recognizer, self.face_image)
 
     def set_distance(self, depth_frame, sophisticated=True):
         if sophisticated:
@@ -110,7 +102,7 @@ class Person:
         return self.relevance <= 0.0
 
     def should_retry(self):
-        return self.name is None and self.face_counter <= 0
+        return self.face is None and self.name is None and self.face_counter <= 0
 
     def absorb(self, other_person):
         if other_person.detection is not None:
@@ -195,9 +187,6 @@ class Person:
     def draw(self, frame):
         tlx,tly,brx,bry = self.to_tlbr()
         cv2.rectangle(frame, (tlx,tly), (brx,bry), (0,0,255) if self.name is None else (0, 255, 0), int(4 * self.relevance))
-        if self.face is not None:
-            tlx,tly,brx,bry = self.face
-            cv2.rectangle(frame, (tlx,tly), (brx,bry), (255,0,0), 1)
 
         y = tly - 15 if tly - 15 > 15 else tly + 15
         cv2.putText(frame, self.get_label_string(), (tlx, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
