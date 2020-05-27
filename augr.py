@@ -117,6 +117,8 @@ class AUGR:
         """
             Set the bearing of this AUGR.
 
+            0 degrees bearing is EAST
+
             Parameters
             ----------
             bearing :: float :
@@ -220,6 +222,7 @@ class AUGR:
 
             for person in self.people:
                 person.draw(frame)
+                person.publish()
 
 
             if visualize or save_output:
@@ -235,7 +238,7 @@ class AUGR:
 if __name__ == "__main__":
     vs = VideoStream(src=0).start()
 
-    a = AUGR(calc_distance=False, calc_tracking=False, grab_faces=True)
+    a = AUGR(calc_distance=False, calc_tracking=False, grab_faces=True, manual_location=True, manual_bearing=True)
     a.load_video_stream(vs, False)
     a.run(True, True)
 

@@ -5,6 +5,8 @@ from os.path import isfile, join
 from PIL import Image
 from faces.facial_recognition import associate_name
 
+import math
+
 class Person:
 
     def __init__(self, detection, face=None, name=None, distance=None):
@@ -204,6 +206,24 @@ class Person:
         if self.distance: to_ret += ' - {}m'.format(round(self.distance, 3))
 
         return to_ret
+
+    def publish(self, base_lat, base_lon, bearing, publish_func):
+        """
+            publish func: publish_detection(lat, lon, name='person', identity='hostile', dimension='land-unit', entity='military', mtype='U-C')
+        """
+        
+        if self.distance is None:
+            lat = base_lat
+            lon = base_lon
+        else:
+            lat = lat + self.distance * math.sin(math.pi * bearing / 180)
+            lon = lon + self.distance * math.cos(math.pi * bearing / 180)
+
+        name = self.name if self.name is not None else 'person'
+
+        publish_func(lat, lon, name=name)
+
+        
 
     def __str__(self):
         return 'Person | Name: {} | Bounding Box: {} | Face_BoundingBox: {} | Distance: {} | Relevance: {}'.format(self.name, self.to_tlbr(), self.face, self.distance, self.relevance)
