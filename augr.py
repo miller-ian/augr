@@ -47,11 +47,14 @@ class AUGR:
         grab_faces :: bool :
             whether or not to grab the faces of people in this image
     """
-    def __init__(self, confidence_threshold=0.6, calc_distance=True, calc_tracking=True, grab_faces=True):
+    def __init__(self, confidence_threshold=0.6, calc_distance=True, calc_tracking=True, grab_faces=True, manual_location=True, manual_bearing=True):
         self.confidence_threshold = confidence_threshold
         self.calc_distance = calc_distance
         self.calc_tracking = calc_tracking
         self.grab_faces = grab_faces
+
+        self.manual_location = manual_location
+        self.manual_bearing = manual_bearing
 
         self.det_model = detection.load_model()
 
@@ -66,6 +69,18 @@ class AUGR:
         if self.grab_faces:
             self.facereg = FaceRecognizer()
 
+        # set location and bearing
+
+        if not self.manual_location:
+            self.set_location()
+        else:
+            self.set_location((0,0)) # default to 0,0
+
+        if not self.manual_bearing:
+            self.set_bearing()
+        else:
+            self.set_bearing(0) # default to 0 degrees
+
     def _init_tracking(self):
         # Parameters
         self.nn_budget = 100
@@ -75,6 +90,48 @@ class AUGR:
         # We use Cosine Distance for nearest neighbors
         self.track_metric = nn_matching.NearestNeighborDistanceMetric("cosine", self.max_cosine_distance, self.nn_budget)
         self.tracker = Tracker(self.track_metric)
+
+    def set_location(self, latlong=None):
+        """
+            Set the latitude and longitude of this AUGR.
+
+            Parameters
+            ----------
+            latlong :: tuple of float :
+                the latitude and longitude coordinates to set.
+                if None, read from a GPS sensor. if None and self.manual_location, do nothing
+        """
+
+        if latlong is None and self.manual_location:
+            pass # this should do nothing
+
+        if latlong is not None:
+            lat,lon = latlong
+            self.lat = lat
+            self.lon = lon
+        else:
+            # TODO put GPS sensor code here
+            raise NotImplementedError()
+
+    def set_bearing(self, bearing=None):
+        """
+            Set the bearing of this AUGR.
+
+            Parameters
+            ----------
+            bearing :: float :
+                the bearing to set.
+                if None, read from a magnet sensor. if None and self.manual_bearing, do nothing
+        """
+
+        if bearing is None and self.manual_bearing:
+            pass # this should do nothing
+
+        if bearing is not None:
+            self.bearing = bearing
+        else:
+            # TODO put magnet sensor code here
+            raise NotImplementedError()
 
     def load_video_stream(self, video_stream, stream_has_ret):
         """
