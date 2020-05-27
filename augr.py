@@ -15,6 +15,8 @@ from depth_estimation import depth_estim
 
 from detection import detection
 
+from mapping.atak_mapper import publish_detection
+
 import numpy as np
 
 import matplotlib.pyplot as plt
