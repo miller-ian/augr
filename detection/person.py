@@ -4,6 +4,7 @@ from os import listdir
 from os.path import isfile, join
 from PIL import Image
 from faces.facial_recognition import associate_name
+import logging
 
 import math
 
@@ -23,6 +24,7 @@ class Person:
         self.distance = distance
 
         self.face_counter=50
+        self.publish_counter=50
 
         self.relevance = 1.0 # how relevant is this detection
 
@@ -84,7 +86,9 @@ class Person:
         self.face_counter = 50
 
         if self.face_image is not None:
-            self.name = associate_name(face_recognizer, self.face_image)
+            name = associate_name(face_recognizer, self.face_image)
+            if name is not None:
+                self.name = name.split('.')[0]
 
     def set_distance(self, depth_frame, sophisticated=True):
         if sophisticated:
@@ -146,6 +150,7 @@ class Person:
             self.relevance -= .25
 
         self.face_counter -= 1
+        self.publish_counter -= 1
 
 
     def iou(self, other_person):
@@ -211,6 +216,11 @@ class Person:
         """
             publish func: publish_detection(lat, lon, name='person', identity='hostile', dimension='land-unit', entity='military', mtype='U-C')
         """
+
+        if self.publish_counter > 0:
+            return
+
+        self.publish_counter = 50
         
         if self.distance is None:
             lat = base_lat
@@ -220,6 +230,8 @@ class Person:
             lon = lon + self.distance * math.cos(math.pi * bearing / 180)
 
         name = self.name if self.name is not None else 'person'
+
+        logging.info('About to publish')
 
         publish_func(lat, lon, name=name)
 

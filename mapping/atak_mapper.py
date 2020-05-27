@@ -2,6 +2,8 @@ import os
 from mapping.publisher import CoT
 import logging
 
+import time
+
 # TODO clean this up
 ATAK_IP = os.getenv('ATAK_IP', '239.2.3.1')
 ATAK_PORT = int(os.getenv('ATAK_PORT', '6969'))

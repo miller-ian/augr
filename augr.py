@@ -222,7 +222,7 @@ class AUGR:
 
             for person in self.people:
                 person.draw(frame)
-                person.publish()
+                person.publish(self.lat, self.lon, self.bearing, publish_detection)
 
 
             if visualize or save_output:
@@ -239,6 +239,8 @@ if __name__ == "__main__":
     vs = VideoStream(src=0).start()
 
     a = AUGR(calc_distance=False, calc_tracking=False, grab_faces=True, manual_location=True, manual_bearing=True)
+    # a.set_location(my_house)
+    a.set_bearing(0)
     a.load_video_stream(vs, False)
     a.run(True, True)
 
