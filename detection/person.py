@@ -90,13 +90,10 @@ class Person:
             if name is not None:
                 self.name = name.split('.')[0]
 
-    def set_distance(self, depth_frame, sophisticated=True):
+    def set_distance(self, distance, sophisticated=True):
         if sophisticated:
-            depth_subs = self._get_subset_from_frame(depth_frame, False)
-
-            avg_depth = np.mean(depth_subs)
-
-            self.distance = avg_depth
+            self.distance = distance
+            
         else:
             tlx,tly,brx,bry = self.to_tlbr()
 

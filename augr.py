@@ -179,9 +179,10 @@ class AUGR:
 
     def _main_loop(self, visualize, save_output, out=None, out_size=(800,600)):
         for detection_list,frame in detection.get_detections_from_stream(self.video_stream, self.stream_has_ret, net=self.det_model):
-
+            
             # update out people
             for person in self.people:
+                # person.publish(self.lat, self.lon, self.bearing, publish_detection)
                 person.update(detection_list)
 
             # detection list will now only contain frames that were not a match with any existing people
@@ -189,14 +190,15 @@ class AUGR:
             self.people = [person for person in self.people if person.relevance > 0]
             self.people.extend(detection_list)
 
-            soph_distance = False
+            soph_distance = True
 
             if self.calc_distance:
                 if soph_distance:
                     depth = depth_estim.get_depth_frame(self.encoder, self.decoder, frame)
-
+                    
                     for person in self.people:
-                        person.set_distance(depth)
+                        person_depth = depth_estim.get_detection_depth(depth, person)
+                        person.set_distance(person_depth)
                 else:
                     for person in self.people:
                         person.set_distance(None, sophisticated=False)
@@ -238,7 +240,7 @@ class AUGR:
 if __name__ == "__main__":
     vs = VideoStream(src=0).start()
 
-    a = AUGR(calc_distance=False, calc_tracking=False, grab_faces=True, manual_location=True, manual_bearing=True)
+    a = AUGR(calc_distance=True, calc_tracking=False, grab_faces=False, manual_location=True, manual_bearing=True)
     # a.set_location(my_house)
     a.set_bearing(0)
     a.load_video_stream(vs, False)

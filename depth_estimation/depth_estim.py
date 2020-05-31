@@ -7,8 +7,11 @@ import torch
 from torchvision import transforms
 import cv2
 import PIL.Image as pil
+from sklearn.cluster import KMeans
+from pandas import DataFrame
+from matplotlib import pyplot as plt
 
-def load_model(model_folder='depth_estimation/models/mono_640x192'):
+def load_model(model_folder='depth_estimation/models/mono+stereo_640x192'):
     """
         Load a model from a given folder path
     """
@@ -42,16 +45,16 @@ def get_depth_frame(encoder, decoder, frame, target_shape=(640,192)):
 
     # TODO make this dynamic
     min_depth = 0.5
-    max_depth = 5
+    max_depth = 3
 
     frame = pil.fromarray(frame).convert('RGB')
     original_width, original_height = frame.size
+    
 
     feed_width,feed_height = target_shape
     input_image_resized = frame.resize((feed_width, feed_height), pil.LANCZOS)
-
     input_image_pytorch = transforms.ToTensor()(input_image_resized).unsqueeze(0)
-
+    
     with torch.no_grad():
         features = encoder(input_image_pytorch)
         outputs = decoder(features)
@@ -65,7 +68,7 @@ def get_depth_frame(encoder, decoder, frame, target_shape=(640,192)):
     resized_depth = cv2.resize(depth_arr, (original_width,original_height))
 
     scaled = disp_to_depth(resized_depth, min_depth, max_depth)[1]
-
+    # cv2.imshow("scaled", resized_depth)
     return scaled
 
 def disp_to_depth(disp, min_depth, max_depth):
@@ -78,3 +81,21 @@ def disp_to_depth(disp, min_depth, max_depth):
     scaled_disp = min_disp + (max_disp - min_disp) * disp
     depth = 1 / scaled_disp
     return scaled_disp, depth
+
+def get_detection_depth(frame, person):
+    detection_frame = person._get_subset_from_frame(frame, False)
+    cluster_1,cluster_2 = separate_background_foreground(detection_frame)
+    detection_depth = min(cluster_1, cluster_2)
+    print(detection_depth)
+    return detection_depth
+
+def separate_background_foreground(frame):
+    cluster_centers_ = get_clusters(frame)
+    background = np.mean(cluster_centers_[0])
+    foreground = np.mean(cluster_centers_[1])    
+    return background, foreground
+
+def get_clusters(pts):
+    df = DataFrame(pts)
+    kmeans = KMeans(n_clusters=2, max_iter=2000000).fit(df)
+    return kmeans.cluster_centers_

@@ -5,7 +5,7 @@ import logging
 import time
 
 # TODO clean this up
-ATAK_IP = os.getenv('ATAK_IP', '239.2.3.1')
+ATAK_IP = os.getenv('ATAK_IP', '192.168.1.39')
 ATAK_PORT = int(os.getenv('ATAK_PORT', '6969'))
 ATAK_PROTO = os.getenv('ATAK_PROTO', 'UDP')
 
@@ -22,8 +22,8 @@ ATAK_PROTO = os.getenv('ATAK_PROTO', 'UDP')
 
 def publish_detection(lat, lon, name='person', identity='hostile', dimension='land-unit', entity='military', mtype='U-C'):
     params = {
-        "lat": lat,
-        "lon": lon,
+        "lat": 28.752345,
+        "lon": -81.390342,
         "uid": name,
         "identity": identity,
         "dimension": dimension,
@@ -35,7 +35,7 @@ def publish_detection(lat, lon, name='person', identity='hostile', dimension='la
     cot_xml = cot.atoms(params).encode()
 
     logging.debug('CoT XML: {}'.format(cot_xml))
-    
+    print("pushing to", str(lat), ",", str(lon))
     logging.info('Pushing detection {}/{}/{} at {} , {} to ATAK'.format(name, identity, dimension, lat, lon))
 
     if ATAK_PROTO == "TCP":
