@@ -5,7 +5,8 @@ import logging
 import time
 
 # TODO clean this up
-ATAK_IP = os.getenv('ATAK_IP', '192.168.1.39')
+# ATAK_IP = os.getenv('ATAK_IP', '192.168.1.23')
+ATAK_IP = os.getenv('ATAK_IP', '239.2.3.1')
 ATAK_PORT = int(os.getenv('ATAK_PORT', '6969'))
 ATAK_PROTO = os.getenv('ATAK_PROTO', 'UDP')
 
@@ -22,8 +23,8 @@ ATAK_PROTO = os.getenv('ATAK_PROTO', 'UDP')
 
 def publish_detection(lat, lon, name='person', identity='hostile', dimension='land-unit', entity='military', mtype='U-C'):
     params = {
-        "lat": 28.752345,
-        "lon": -81.390342,
+        "lat": lat,
+        "lon": lon,
         "uid": name,
         "identity": identity,
         "dimension": dimension,
@@ -38,9 +39,12 @@ def publish_detection(lat, lon, name='person', identity='hostile', dimension='la
     print("pushing to", str(lat), ",", str(lon))
     logging.info('Pushing detection {}/{}/{} at {} , {} to ATAK'.format(name, identity, dimension, lat, lon))
 
-    if ATAK_PROTO == "TCP":
-      sent = cot.pushTCP(ATAK_IP, ATAK_PORT, cot_xml)
-    else:
-      sent = cot.pushUDP(ATAK_IP, ATAK_PORT, cot_xml)
-
-    logging.info(str(sent) + " bytes sent to " + ATAK_IP + " on port " + str(ATAK_PORT))
+    try:
+      if ATAK_PROTO == "TCP":
+        sent = cot.pushTCP(ATAK_IP, ATAK_PORT, cot_xml)
+      else:
+        sent = cot.pushUDP(ATAK_IP, ATAK_PORT, cot_xml)
+        
+      logging.info(str(sent) + " bytes sent to " + ATAK_IP + " on port " + str(ATAK_PORT))
+    except:
+      logging.warning('Could not push detection to ATAK!')

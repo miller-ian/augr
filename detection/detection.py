@@ -71,7 +71,7 @@ def _create_person_from_tuple(det_tuple):
             a deepSORT detection object with the information encoded
     """
     bbox, confidence, label, feature = det_tuple[2:6], det_tuple[6], det_tuple[10], det_tuple[11:]
-    
+
     return Person(Detection(bbox, confidence, feature, label))
 
 def get_detections_from_frame(frame, min_conf=0.6, net=None, label_filter=['person'], frame_num=0):

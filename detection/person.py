@@ -8,16 +8,28 @@ import logging
 
 import math
 
+SIDE_PROFILE_RATIO = 0.125
+FRONT_PROFILE_RATIO = 0.25
+REQ_ADJUSTMENT_LIMIT = 0.375
+
+SIX_FEET_IN_METERS = 1.8288
+
+METER_TO_LATLONG_DEGREE_COEFFICIENT = 1.0 / (111.32 * 1000.0)
+
 class Person:
 
-    def __init__(self, detection, face=None, name=None, distance=None):
+    def __init__(self, detection, person_id=None, face=None, name=None, distance=None):
         """
             Parameters
             ----------
+            id :: int :
+                the unique id number of this person
             detection :: Detection :
                 the detection associated with this person
         """
         self.detection = detection
+
+        self.id = person_id
 
         self.face = face
         self.name = name
@@ -27,6 +39,7 @@ class Person:
         self.publish_counter=50
 
         self.relevance = 1.0 # how relevant is this detection
+        self.relevance_increment = 0.05
 
     # DETECTION METHODS
     def to_tlbr(self):
@@ -90,20 +103,45 @@ class Person:
             if name is not None:
                 self.name = name.split('.')[0]
 
-    def set_distance(self, distance, sophisticated=True):
+    def set_distance(self, frame_size, sophisticated=True):
         if sophisticated:
             self.distance = distance
             
         else:
+            # get self width and height
             tlx,tly,brx,bry = self.to_tlbr()
+            width, height = frame_size
 
-            width = ((brx - tlx) * 0.9) // 1
+            self_w, self_h = brx - tlx, bry - tly
 
-            # average male shoulder width is 16 inches = 0.4064m
-            # TODO
+            height_below = height - bry
+            height_above = tly
 
-            width_inches = width * 16
-            self.distance = width_inches / 39.3701 # num inches in meter
+            self_ratio = self_w / self_h
+
+            adjusted_height = SIX_FEET_IN_METERS * (FRONT_PROFILE_RATIO / self_ratio)
+
+            # maybe if less than 0.125 we 
+            # also horizontal factor
+
+            m_per_px = adjusted_height / self_h
+
+            slice_height_in_meters = m_per_px * float(height)
+
+            if self.reL_bearing:
+                self.distance = ((math.sqrt(3) / 2) * slice_height_in_meters) / math.cos(float(self.reL_bearing) * math.pi / 360.0) # adjust for relative angle
+            else:
+                self.distance = (math.sqrt(3) / 2) * slice_height_in_meters
+
+    def set_relative_bearing(self, frame_size, aperture_width=60.0):
+        tlx,tly,brx,bry = self.to_tlbr()
+        width, height = frame_size
+
+        middle_x = float(self.to_xyah()[0])
+
+        deg_from_left = (float(middle_x) / float(width)) * aperture_width
+
+        self.reL_bearing = deg_from_left - (aperture_width / 2)
 
     def is_identified(self):
         return self.name is not None
@@ -127,7 +165,18 @@ class Person:
         if other_person.distance is not None:
             self.distance = other_person.distance
 
-    def update(self, people, min_iou=0.5):
+    def update(self, people, current_id, min_iou=0.5):
+        """
+            Updates this `Person`
+
+            Returns current_id if self.id is None else current_id + 1
+        """
+
+        # set ID
+        if self.id is None:
+            self.id = current_id
+            current_id += 1
+
         matched = False
         max_iou = 0
         argmax_iou = None
@@ -144,10 +193,12 @@ class Person:
             self.absorb(people.pop(argmax_iou))
             self.relevance = 1.0
         else:
-            self.relevance -= .25
+            self.relevance -= self.relevance_increment
 
         self.face_counter -= 1
         self.publish_counter -= 1
+
+        return current_id
 
 
     def iou(self, other_person):
@@ -196,14 +247,17 @@ class Person:
         return total_area - self._intersection(other_person)
 
     def draw(self, frame):
+
+        color = (0, 0, int(255 * self.relevance)) if self.name is None else (0, int(255 * self.relevance), 0)
+
         tlx,tly,brx,bry = self.to_tlbr()
-        cv2.rectangle(frame, (tlx,tly), (brx,bry), (0,0,255) if self.name is None else (0, 255, 0), int(4 * self.relevance))
+        cv2.rectangle(frame, (tlx,tly), (brx,bry), color, 4)
 
         y = tly - 15 if tly - 15 > 15 else tly + 15
-        cv2.putText(frame, self.get_label_string(), (tlx, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
+        cv2.putText(frame, self.get_label_string(), (tlx, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
     def get_label_string(self):
-        to_ret = 'person'
+        to_ret = 'person_{}'.format(self.id)
         if self.name is not None: to_ret = self.name
         if self.distance: to_ret += ' - {}m'.format(round(self.distance, 3))
 
@@ -218,24 +272,24 @@ class Person:
             return
 
         self.publish_counter = 50
+
+        adj_bearing = bearing + self.reL_bearing if self.reL_bearing else bearing
         
         if self.distance is None:
             lat = base_lat
             lon = base_lon
         else:
-            lat = lat + self.distance * math.sin(math.pi * bearing / 180)
-            lon = lon + self.distance * math.cos(math.pi * bearing / 180)
+            lat = base_lat + (self.distance * math.sin(math.pi * adj_bearing / 180) * METER_TO_LATLONG_DEGREE_COEFFICIENT)
+            lon = base_lon + (self.distance * math.cos(math.pi * adj_bearing / 180) * METER_TO_LATLONG_DEGREE_COEFFICIENT)
 
-        name = self.name if self.name is not None else 'person'
+        name = self.name if self.name is not None else 'person{}'.format(self.id)
 
         logging.info('About to publish')
 
         publish_func(lat, lon, name=name)
 
-        
-
     def __str__(self):
-        return 'Person | Name: {} | Bounding Box: {} | Face_BoundingBox: {} | Distance: {} | Relevance: {}'.format(self.name, self.to_tlbr(), self.face, self.distance, self.relevance)
+        return 'Person {} | Name: {} | Bounding Box: {} | Face_BoundingBox: {} | Distance: {} | Relevance: {}'.format(self.id, self.name, self.to_tlbr(), self.face, self.distance, self.relevance)
 
 if __name__ == "__main__":
     a = Person(None)

@@ -58,6 +58,8 @@ class AUGR:
 
         self.det_model = detection.load_model()
 
+        self.max_person_id = 0
+
         self.people = list()
 
         if self.calc_tracking:
@@ -164,7 +166,9 @@ class AUGR:
 
         out_size = (800,600)
 
-        if save_as_video: out = cv2.VideoWriter('out.mp4',cv2.VideoWriter_fourcc(*'MP4V'), 15, out_size)
+        FRAME_RATE = 60
+
+        if save_as_video: out = cv2.VideoWriter('out.mp4',cv2.VideoWriter_fourcc(*'MP4V'), FRAME_RATE, out_size)
 
         try:
             self._main_loop(visualize, save_output, out=out if save_as_video else None, out_size=out_size)
@@ -175,33 +179,39 @@ class AUGR:
         finally:
             if save_as_video: out.release()
             cv2.destroyAllWindows()
-            self.video_stream.stop()
+            if not self.stream_has_ret: self.video_stream.stop()
 
     def _main_loop(self, visualize, save_output, out=None, out_size=(800,600)):
-        for detection_list,frame in detection.get_detections_from_stream(self.video_stream, self.stream_has_ret, net=self.det_model):
+        for detection_list,frame in detection.get_detections_from_stream(self.video_stream, stream_has_ret=self.stream_has_ret, net=self.det_model):
+
+            frame_height, frame_width, _ = frame.shape
             
             # update out people
             for person in self.people:
                 # person.publish(self.lat, self.lon, self.bearing, publish_detection)
-                person.update(detection_list)
+                self.max_person_id = person.update(detection_list, self.max_person_id)
 
             # detection list will now only contain frames that were not a match with any existing people
 
             self.people = [person for person in self.people if person.relevance > 0]
             self.people.extend(detection_list)
 
-            soph_distance = True
+            soph_distance = False
 
             if self.calc_distance:
+
                 if soph_distance:
+                    # TODO
                     depth = depth_estim.get_depth_frame(self.encoder, self.decoder, frame)
                     
                     for person in self.people:
+                        person.set_relative_bearing((frame_width, frame_height))
                         person_depth = depth_estim.get_detection_depth(depth, person)
                         person.set_distance(person_depth)
                 else:
                     for person in self.people:
-                        person.set_distance(None, sophisticated=False)
+                        person.set_relative_bearing((frame_width, frame_height))
+                        person.set_distance((frame_width, frame_height), sophisticated=False)
 
             if self.grab_faces:
                 for person in self.people:
@@ -238,11 +248,15 @@ class AUGR:
                 cv2.waitKey(1)
 
 if __name__ == "__main__":
-    vs = VideoStream(src=0).start()
+    # vs = VideoStream(src=0).start()
+    vs = cv2.VideoCapture('testclip2.mov')
 
-    a = AUGR(calc_distance=True, calc_tracking=False, grab_faces=False, manual_location=True, manual_bearing=True)
-    # a.set_location(my_house)
+    a = AUGR(calc_distance=True, calc_tracking=True, grab_faces=True, manual_location=True, manual_bearing=True)
+    
+    times_square = (40.758787, -73.985172)
+    bearing = (100)
+    a.set_location(times_square)
     a.set_bearing(0)
-    a.load_video_stream(vs, False)
+    a.load_video_stream(vs, True)
     a.run(True, True)
 

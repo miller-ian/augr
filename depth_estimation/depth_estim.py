@@ -11,7 +11,7 @@ from sklearn.cluster import KMeans
 from pandas import DataFrame
 from matplotlib import pyplot as plt
 
-def load_model(model_folder='depth_estimation/models/mono+stereo_640x192'):
+def load_model(model_folder='depth_estimation/models/mono_640x192'):
     """
         Load a model from a given folder path
     """
