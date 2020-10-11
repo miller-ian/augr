@@ -21,6 +21,9 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
+from phone import phone
+from upload import upload
+
 logging.basicConfig(filename='log.log', format='[%(asctime)s] - %(message)s', level=logging.INFO)
 
 FACENET_ERROR_BEGIN = 'There were no tensor arguments to this function'
@@ -182,6 +185,14 @@ class AUGR:
             if not self.stream_has_ret: self.video_stream.stop()
 
     def _main_loop(self, visualize, save_output, out=None, out_size=(800,600)):
+        Liam_target_video_memory_buffer = []
+        Liam_target_video_writer = cv2.VideoWriter('Liamtarget.mp4',cv2.VideoWriter_fourcc(*'MP4V'), 30, out_size)
+        Liam_target_counter = 0
+        increase_Liam_target_counter = False
+        michael_target_video_memory_buffer = []
+        michael_target_video_writer = cv2.VideoWriter('michaeltarget.mp4',cv2.VideoWriter_fourcc(*'MP4V'), 30, out_size)
+        michael_target_counter = 0
+        increase_michael_target_counter = False
         for detection_list,frame in detection.get_detections_from_stream(self.video_stream, stream_has_ret=self.stream_has_ret, net=self.det_model):
 
             frame_height, frame_width, _ = frame.shape
@@ -190,6 +201,7 @@ class AUGR:
             for person in self.people:
                 # person.publish(self.lat, self.lon, self.bearing, publish_detection)
                 self.max_person_id = person.update(detection_list, self.max_person_id)
+                
 
             # detection list will now only contain frames that were not a match with any existing people
 
@@ -212,7 +224,7 @@ class AUGR:
                     for person in self.people:
                         person.set_relative_bearing((frame_width, frame_height))
                         person.set_distance((frame_width, frame_height), sophisticated=False)
-
+            
             if self.grab_faces:
                 for person in self.people:
                     if person.should_retry():
@@ -226,7 +238,7 @@ class AUGR:
                                 logging.warning('No faces detected - expected a face!')
                             else:
                                 raise e
-
+            
             # if self.calc_tracking:
             #     run_tracking(self.tracker, detection_list, frame, nms_max_overlap=self.nms_max_overlap, visualize=visualize)
             # elif visualize:
@@ -234,11 +246,46 @@ class AUGR:
 
             for person in self.people:
                 person.draw(frame)
-                person.publish(self.lat, self.lon, self.bearing, publish_detection)
-
+                if(person.name == "Liam"):
+                    if(person.already_found == False):
+                        person.already_found = True
+                        increase_Liam_target_counter = True
+                elif (person.name == "michael"):
+                    if(person.already_found == False):
+                        person.already_found = True
+                        increase_michael_target_counter = True
+                #person.publish(self.lat, self.lon, self.bearing, publish_detection)
+            
+            if(increase_Liam_target_counter):
+                Liam_target_counter+=1
+                
+            if(Liam_target_counter > 15):
+                for target_frame in Liam_target_video_memory_buffer:
+                    Liam_target_video_writer.write(target_frame)
+                Liam_target_video_writer.release()
+                url = upload.upload_file(file_from = "Liamtarget.mp4", file_to = "/Liamtarget.mp4")
+                phone.send_message(url)
+                increase_Liam_target_counter = False
+                Liam_target_counter = 0
+                
+            if(increase_michael_target_counter):
+                michael_target_counter+=1
+                
+            if(michael_target_counter > 15):
+                for target_frame in michael_target_video_memory_buffer:
+                    michael_target_video_writer.write(target_frame)
+                michael_target_video_writer.release()
+                url = upload.upload_file(file_from = "michaeltarget.mp4", file_to = "/michaeltarget.mp4")
+                phone.send_message(url)
+                increase_michael_target_counter = False
+                michael_target_counter = 0
+                
+            
 
             if visualize or save_output:
                 frame = cv2.resize(frame, out_size)
+                Liam_target_video_memory_buffer.append(frame)
+                michael_target_video_memory_buffer.append(frame)
 
             if visualize and save_output:
                 out.write(frame)
@@ -246,10 +293,20 @@ class AUGR:
             if visualize:
                 cv2.imshow('frame', frame)
                 cv2.waitKey(1)
+                
+            
+            if(len(Liam_target_video_memory_buffer) > 30):
+                Liam_target_video_memory_buffer.pop(0)
+            if(len(michael_target_video_memory_buffer) > 30):
+                michael_target_video_memory_buffer.pop(0)
+                
+                
+                
+                
 
 if __name__ == "__main__":
-    # vs = VideoStream(src=0).start()
-    vs = cv2.VideoCapture('testclip2.mov')
+    vs = VideoStream(src=0).start()
+    #vs = cv2.VideoCapture('testclip2.mp4')
 
     a = AUGR(calc_distance=True, calc_tracking=True, grab_faces=True, manual_location=True, manual_bearing=True)
     
@@ -257,6 +314,6 @@ if __name__ == "__main__":
     bearing = (100)
     a.set_location(times_square)
     a.set_bearing(0)
-    a.load_video_stream(vs, True)
+    a.load_video_stream(vs, False) #
     a.run(True, True)
 

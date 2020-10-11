@@ -2,8 +2,8 @@ import os
 import time
 import CoT
 
-ATAK_IP = os.getenv('ATAK_IP', '239.2.3.1')
-ATAK_PORT = int(os.getenv('ATAK_PORT', '6969'))
+ATAK_IP = os.getenv('ATAK_IP', '239.5.5.55')
+ATAK_PORT = int(os.getenv('ATAK_PORT', '7171'))
 ATAK_PROTO = os.getenv('ATAK_PROTO', 'UDP')
 
 params = {  # SWX parking lot
@@ -13,11 +13,12 @@ params = {  # SWX parking lot
     "identity": "hostile",
     "dimension": "land-unit",
     "entity": "military",
-    "type": "U-C"
+    "type": "U-C",
+    "how": "m-s"
 #    "type": "U-C-R-H"
 }
 
-for i in range(0, 10):
+for i in range(0, 1):
     params["lat"] = params["lat"] + i/10000.0
     params["lon"] = params["lon"] + i/10000.0
     print("Params:\n" + str(params))

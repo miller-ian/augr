@@ -40,6 +40,8 @@ class Person:
 
         self.relevance = 1.0 # how relevant is this detection
         self.relevance_increment = 0.05
+        
+        self.already_found = False
 
     # DETECTION METHODS
     def to_tlbr(self):

@@ -40,7 +40,8 @@ class FaceRecognizer():
         """Initialize our facial recognition object"""
 
         # i dont have a GPU but maybe you do :)
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        #self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = 'cpu'
         if debug: print('Running on device: {}'.format(self.device))
 
         self.det_mtcnn = MTCNN(keep_all=True, device=self.device)
@@ -187,13 +188,14 @@ if __name__ == "__main__":
     # cv2.imshow('a', frame)
     # cv2.waitKey(0)
 
-    f1 = cv2.imread('faces/face_db/patrick.jpeg')
+    #f1 = cv2.imread('faces/face_db/patrick.jpeg')
     # f2 = cv2.imread('faces/face_db/michael.jpeg')
-    # f2 = cv2.imread('faces/found_faces/found.jpg')
-
-    v1 = f.get_face_vector(f1).detach().numpy()
-    # v2 = f.get_face_vector(f2).detach().numpy()
+    f2 = cv2.imread('faces/found_faces/found.jpg')
+    cv2.imshow('./found_faces/found.jpg', f2)
+    cv2.waitKey(0)
+    #v1 = f.get_face_vector(f1).detach().numpy()
+    v2 = f.get_face_vector(f2).detach().numpy()
 
     # print(distance.cosine(v1, v2))
-    np.save('faces/face_db/patrick.npy', v1)
+    np.save('faces/face_db/Liam.npy', v2)
 
