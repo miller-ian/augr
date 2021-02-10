@@ -1,6 +1,12 @@
 # augr
 Artificial Ubiquitous Gathering Relay
 
+# TODO
+
+- Mesh Networking (beartooth.com)
+- Jetson Xavier?
+- Better Models
+
 ## Table of Contents
 - [Getting Started](#getting-started)
     - [Activating the Environment](#activating-the-environment)
